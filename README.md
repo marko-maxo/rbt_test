@@ -10,3 +10,8 @@ Endpoints:
     Samo page je obavezan filter, a ukoliko se radi i pretraga po kvadraturi onda su i min i max potrebni
 3. Kreiranje nove nekretnine POST -> /api/nekretnina/
 4. Update postojece: PATCH -> /api/nekretnina/[id]
+
+## Crawler
+Crawler se pokrece samo sa python crawler.py
+
+Koristi BeautifulSoup da pokupi podatke sa stranica i requests da salje podatke na server.
