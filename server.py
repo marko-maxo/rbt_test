@@ -58,8 +58,8 @@ class Nekretnina(db.Model):
 
 @app.get("/api/nekretnina/<id>")
 def pretraga_id(id):
-    nekretnina = Nekretnina.query.filter_by(id=id).first()
-
+    # nekretnina = Nekretnina.query.filter_by(id=id).first()
+    nekretnina = db.session.execute(db.select(Nekretnina).filter_by(id=id)).scalar()
     if nekretnina:
         return jsonify(nekretnina.serialized_data())
 
@@ -68,7 +68,7 @@ def pretraga_id(id):
 
 @app.get("/api/nekretnina/")
 def full_pretraga():
-    nekretnine = Nekretnina.query.filter()
+    nekretnine = db.session.query(Nekretnina)
     tip = request.args.get("tip")
     if tip:
         if tip == "stan":
@@ -91,7 +91,8 @@ def full_pretraga():
         nekretnine = nekretnine.filter_by(ima_parking=parking)
 
     stranica = int(request.args.get("page"))
-    stranica_podaci = nekretnine.order_by("id").paginate(page=stranica, per_page=2)
+    # stranica_podaci = nekretnine.order_by("id").paginate(page=stranica, per_page=2)
+    stranica_podaci = db.paginate(nekretnine.order_by("id"), page=stranica, per_page=2)
 
     return jsonify({
         "trenutna_stranica": stranica_podaci.page,
@@ -143,10 +144,21 @@ def update_nekretnine(id):
     if "id" in data.keys():
         return jsonify({"error": "ID se ne moze menjati"})
     
-    nekretnina = Nekretnina.query.filter_by(id=id).first()
+    nekretnina = db.session.execute(db.select(Nekretnina).filter_by(id=id)).scalar()
     
-    nekretnina = nekretnina.update(data)
-    db.session.commit()
-    return jsonify(Nekretnina.query.filter_by(id=id).first().serialized_data())
+    if not nekretnina:
+        return jsonify({"info": "Nekretnina sa tim ID ne postoji"})
 
-    return jsonify({"info": "Nekretnina sa tim ID ne postoji"})
+    if nekretnina.stan:
+        data["povrsina_zemljista"] = None
+    else:
+        data["sprat"] = None
+        data["ukupno_spratova"] = None
+    
+    for k, v in data.items():
+        setattr(nekretnina, k,  v)
+    
+    db.session.merge(nekretnina)
+    db.session.commit()
+
+    return jsonify(nekretnina.serialized_data())
