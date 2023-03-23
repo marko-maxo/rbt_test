@@ -135,7 +135,7 @@ def dodaj_nekretninu():
 
     db.session.add(nova_nekretnina)
     db.session.commit()
-    return data
+    return nova_nekretnina.serialized_data()
 
 @app.patch("/api/nekretnina/<id>")
 def update_nekretnine(id):
