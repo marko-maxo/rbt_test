@@ -18,8 +18,9 @@ class Nekretnina(db.Model):
     link_nekretnine = db.Column(db.String(300), nullable=True, unique=True)
     stan = db.Column(db.Boolean, nullable=True)
     izdavanje = db.Column(db.Boolean, nullable=True)
-    lokacija_grad = db.Column(db.String(30), nullable=True)
-    lokacija_deo_grada = db.Column(db.String(50), nullable=True)
+    lokacija = db.Column(db.String(80), nullable=True)
+    # lokacija_grad = db.Column(db.String(30), nullable=True)
+    # lokacija_deo_grada = db.Column(db.String(50), nullable=True)
     kvadratura = db.Column(db.Float, nullable=True)
     godina_izgradnje = db.Column(db.Integer, nullable=True)
     povrsina_zemljista = db.Column(db.Float, nullable=True)
@@ -38,8 +39,9 @@ class Nekretnina(db.Model):
             "link_nekretnine": self.link_nekretnine,
             "stan": self.stan,
             "izdavanje": self.izdavanje,
-            "lokacija_grad": self.lokacija_grad,
-            "lokacija_deo_grada": self.lokacija_deo_grada,
+            "lokacija": self.lokacija,
+            # "lokacija_grad": self.lokacija_grad,
+            # "lokacija_deo_grada": self.lokacija_deo_grada,
             "kvadratura": self.kvadratura,
             "godina_izgradnje": self.godina_izgradnje,
             "povrsina_zemljista": self.povrsina_zemljista,
@@ -66,7 +68,7 @@ def pretraga_id(id):
 
 @app.get("/api/nekretnina/")
 def full_pretraga():
-    nekretnine = Nekretnina.query.filter().order_by("id")
+    nekretnine = Nekretnina.query.filter()
     tip = request.args.get("tip")
     if tip:
         if tip == "stan":
@@ -88,29 +90,63 @@ def full_pretraga():
         parking = parking == "True"
         nekretnine = nekretnine.filter_by(ima_parking=parking)
 
-    print(nekretnine.all())
     stranica = int(request.args.get("page"))
-    nekretnine = nekretnine.all()[(stranica-1)*2:stranica*2]
-    return jsonify({"nekretnine": [nekretnina.serialized_data() for nekretnina in nekretnine]})
+    stranica_podaci = nekretnine.order_by("id").paginate(page=stranica, per_page=2)
+
+    return jsonify({
+        "trenutna_stranica": stranica_podaci.page,
+        "ukupno_stranica": stranica_podaci.pages,
+        "rezultata_po_stranici": stranica_podaci.per_page,
+        "total_rezultata": stranica_podaci.total,
+        "nekretnine": [nekretnina.serialized_data() for nekretnina in stranica_podaci.items]
+    })
 
 @app.post("/api/nekretnina/")
 def dodaj_nekretninu():
     data = request.json
-    nova_nekretnina = Nekretnina(**data)
+
+    nekretnina_info = {
+        "link_nekretnine": data["link_nekretnine"],
+        "stan": data["stan"],
+        "izdavanje": data["izdavanje"],
+        "lokacija": data["lokacija"],
+        "godina_izgradnje": data["godina_izgradnje"],
+        "kvadratura": data["kvadratura"],
+        "uknjizeno": data["uknjizeno"],
+        "tip_grejanja": data["tip_grejanja"],
+        "broj_soba": data["broj_soba"],
+        "broj_kupatila": data["broj_kupatila"],
+        "ima_parking": data["ima_parking"],
+        "dodatna_opremljenost": data["dodatna_opremljenost"]
+        }
+
+
+    if nekretnina_info["stan"]:
+        nekretnina_info["sprat"] = data["sprat"]
+        nekretnina_info["ukupno_spratova"] = data["ukupno_spratova"]
+
+    else:
+        nekretnina_info["povrsina_zemljista"] = data["povrsina_zemljista"]
+
+
+    nova_nekretnina = Nekretnina(**nekretnina_info)
+
+
     db.session.add(nova_nekretnina)
     db.session.commit()
     return data
 
 @app.patch("/api/nekretnina/<id>")
 def update_nekretnine(id):
-    nekretnina = Nekretnina.query.filter_by(id=id)
-    print(nekretnina)
     data = request.json
+
     if "id" in data.keys():
         return jsonify({"error": "ID se ne moze menjati"})
-    if nekretnina.all():
-        nekretnina = nekretnina.update(data)
-        db.session.commit()
-        return jsonify(Nekretnina.query.filter_by(id=id).first().serialized_data())
+    
+    nekretnina = Nekretnina.query.filter_by(id=id).first()
+    
+    nekretnina = nekretnina.update(data)
+    db.session.commit()
+    return jsonify(Nekretnina.query.filter_by(id=id).first().serialized_data())
 
     return jsonify({"info": "Nekretnina sa tim ID ne postoji"})
