@@ -8,29 +8,29 @@ stranice_url = "https://www.nekretnine.rs/stambeni-objekti/lista/po-stranici/10/
 trenutna_stranica = 1
 odradjene_nekretnine = []
 
-def obradi_nekretninu(link_nekretnine):
 
+def obradi_nekretninu(link_nekretnine):
     req = requests.get(link_nekretnine)
     html_deo = req.text
     soup = BeautifulSoup(html_deo, "lxml")
 
     nova_nekretnina = {
-        "link_nekretnine": link_nekretnine, #
-        "stan":  None, #
-        "izdavanje":  None, #
-        "lokacija": None, #
+        "link_nekretnine": link_nekretnine,  #
+        "stan": None,  #
+        "izdavanje": None,  #
+        "lokacija": None,  #
         # "lokacija_grad":  None, #
         # "lokacija_deo_grada":  None, #
-        "kvadratura":  None, #
-        "godina_izgradnje":  None, #
-        "povrsina_zemljista":  None, # 
-        "sprat":  None, #
-        "ukupno_spratova":  None, #
-        "uknjizeno":  None, #
-        "tip_grejanja":  None,
-        "broj_soba":  None,  #
-        "broj_kupatila":  None,  #
-        "ima_parking":  None, #
+        "kvadratura": None,  #
+        "godina_izgradnje": None,  #
+        "povrsina_zemljista": None,  #
+        "sprat": None,  #
+        "ukupno_spratova": None,  #
+        "uknjizeno": None,  #
+        "tip_grejanja": None,
+        "broj_soba": None,  #
+        "broj_kupatila": None,  #
+        "ima_parking": None,  #
         "dodatna_opremljenost": []
     }
 
@@ -43,7 +43,7 @@ def obradi_nekretninu(link_nekretnine):
     else:
         return False
     nova_nekretnina["stan"] = stan
-    
+
     nova_nekretnina["lokacija"] = soup.find("h3", {"class": "stickyBox__Location"}).text.strip()
 
     # lokacija = soup.find("h3", {"class": "stickyBox__Location"}).text.split(", ")
@@ -54,7 +54,7 @@ def obradi_nekretninu(link_nekretnine):
     #     print("Nema potpunih podataka za lokaciju")
 
     glavni_detalji = soup.find("div", {"class": "property__main-details"})
-    
+
     if glavni_detalji:
         for g in glavni_detalji.findChildren("li"):
             glavni_text = g.text.strip().split(":")
@@ -73,7 +73,7 @@ def obradi_nekretninu(link_nekretnine):
                 vrednost = vrednost.split("/")
                 vrednost[0] = vrednost[0].strip()
                 if vrednost[0] == "Prizemlje":
-                        vrednost[0] = 0
+                    vrednost[0] = 0
                 elif vrednost[0] == "Visoko prizemlje":
                     vrednost[0] = 0.5
                 elif vrednost[0] == "Suteren":
@@ -138,6 +138,7 @@ def obradi_nekretninu(link_nekretnine):
 
     return nova_nekretnina
 
+
 while trenutna_stranica < 50:
     print("STRANICA:", trenutna_stranica)
     stranica_pretrage = stranice_url + str(trenutna_stranica)
@@ -154,4 +155,3 @@ while trenutna_stranica < 50:
             # print(nekretnina_info)
             requests.post(server_endpoint, json=nekretnina_info)
     trenutna_stranica += 1
-
